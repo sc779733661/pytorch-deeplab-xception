@@ -3,6 +3,7 @@ import random
 import numpy as np
 
 from PIL import Image, ImageOps, ImageFilter
+from PIL import ImageEnhance
 
 class Normalize(object):
     """Normalize a tensor image with mean and standard deviation.
@@ -57,6 +58,17 @@ class RandomHorizontalFlip(object):
         return {'image': img,
                 'label': mask}
 
+class RandomVerticalFlip(object):
+    def __call__(self, sample):
+        img = sample['image']
+        mask = sample['label']
+        if random.random() < 0.5:
+            img = img.transpose(Image.FLIP_TOP_BOTTOM)
+            mask = mask.transpose(Image.FLIP_TOP_BOTTOM)
+
+        return {'image': img,
+                'label': mask}
+
 
 class RandomRotate(object):
     def __init__(self, degree):
@@ -81,6 +93,74 @@ class RandomGaussianBlur(object):
             img = img.filter(ImageFilter.GaussianBlur(
                 radius=random.random()))
 
+        return {'image': img,
+                'label': mask}
+
+
+class RandomBright(object):
+    def __call__(self, sample):
+        img = sample['image']
+        mask = sample['label']
+        if random.random() < 0.5:
+            brightness = random.randint(5, 15) * 0.1
+            enh_bri = ImageEnhance.Brightness(img)
+            img = enh_bri.enhance(brightness)
+
+        return {'image': img,
+                'label': mask}
+
+
+class RandomColor(object):
+    def __call__(self, sample):
+        img = sample['image']
+        mask = sample['label']
+        if random.random() < 0.5:
+            color = random.randint(5, 15) * 0.1
+            enh_col = ImageEnhance.Color(img)
+            img = enh_col.enhance(color)
+
+        return {'image': img,
+                'label': mask}
+
+
+class RandomContrast(object):
+    def __call__(self, sample):
+        img = sample['image']
+        mask = sample['label']
+        if random.random() < 0.5:
+            contrast = random.randint(8, 16) * 0.1
+            enh_con = ImageEnhance.Contrast(img)
+            img = enh_con.enhance(contrast)
+
+        return {'image': img,
+                'label': mask}
+
+
+class RandomSharpness(object):
+    def __call__(self, sample):
+        img = sample['image']
+        mask = sample['label']
+        if random.random() < 0.5:
+            sharpness = random.randint(5, 30) * 0.1
+            enh_sha = ImageEnhance.Sharpness(img)
+            img = enh_sha.enhance(sharpness)
+
+        return {'image': img,
+                'label': mask}
+
+
+class RandomNoise(object):
+    def __call__(self, sample, percetage=0.1):
+        img = sample['image']
+        mask = sample['label']
+        if random.random() < 0.5:
+            pim = img.load()
+            SP_NoiseNum=int(percetage*img.width*img.height)
+            for i in range(SP_NoiseNum):
+                randw=np.random.randint(0,img.width-1)
+                randh=np.random.randint(0,img.height-1)
+                pim[randw,randh]=(0,0,0)
+        
         return {'image': img,
                 'label': mask}
 

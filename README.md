@@ -64,6 +64,14 @@ Follow steps below to train your model:
                 [--checkname CHECKNAME] [--ft] [--eval-interval EVAL_INTERVAL]
                 [--no-val]
 
+    eg.
+    python train.py --backbone mobilenet --lr 0.005 --workers 1 --epochs 200 --batch-size 4 --gpu-ids 0 --checkname deeplab-mobilenet --dataset meter_seg_voc
+    python train.py --backbone resnet --lr 0.005 --workers 1 --epochs 200 --batch-size 2 --gpu-ids 0 --checkname deeplab-resnet --dataset meter_seg_voc
+    python train.py --backbone drn --lr 0.005 --workers 1 --epochs 200 --batch-size 4 --gpu-ids 0 --checkname deeplab-drn --dataset meter_seg_voc
+
+    backbone_download_path:
+    C:\Users\hkc/.cache\torch\hub\checkpoints\mobilenet_v2-6a65762b.pth
+
     ```
 
 2. To train deeplabv3+ using Pascal VOC dataset and ResNet as backbone:
@@ -74,6 +82,19 @@ Follow steps below to train your model:
     ```Shell
     bash train_coco.sh
     ```    
+
+### Tensorboard
+You can visualize in real time the train and test losses, the weights and gradients, along with the model predictions with tensorboard:
+
+`tensorboard --logdir=runs`
+
+### predict
+
+python predict.py --in-path your_file --out-path your_dst_file
+
+such as:
+python predict.py --in-path E:\sc\image_data\meter\meter_seg\images\val --ckpt run\meter_seg_voc\deeplab-resnet\model_best.pth.tar --backbone resnet
+
 
 ### Acknowledgement
 [PyTorch-Encoding](https://github.com/zhanghang1989/PyTorch-Encoding)

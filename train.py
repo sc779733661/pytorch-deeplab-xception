@@ -183,7 +183,7 @@ def main():
     parser.add_argument('--out-stride', type=int, default=16,
                         help='network output stride (default: 8)')
     parser.add_argument('--dataset', type=str, default='pascal',
-                        choices=['pascal', 'coco', 'cityscapes'],
+                        choices=['pascal', 'coco', 'cityscapes', 'meter_seg_voc'],
                         help='dataset name (default: pascal)')
     parser.add_argument('--use-sbd', action='store_true', default=True,
                         help='whether to use SBD dataset (default: True)')
@@ -301,3 +301,6 @@ def main():
 
 if __name__ == "__main__":
    main()
+
+# python train.py --backbone mobilenet --lr 0.007 --workers 1 --epochs 50 
+#                 --batch-size 8 --gpu-ids 0 --checkname deeplab-mobilenet --dataset meter_seg_voc

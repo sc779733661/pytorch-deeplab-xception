@@ -9,6 +9,8 @@ class Path(object):
             return '/path/to/datasets/cityscapes/'     # foler that contains leftImg8bit/
         elif dataset == 'coco':
             return '/path/to/datasets/coco/'
+        elif dataset == 'meter_seg_voc':
+            return 'E:\sc\image_data\meter\meter_seg_voc'
         else:
             print('Dataset {} not available.'.format(dataset))
             raise NotImplementedError
