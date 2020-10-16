@@ -88,7 +88,7 @@ class VOCSegmentation(Dataset):
             tr.RandomBright(),
             tr.RandomColor(),
             tr.RandomContrast(),
-            tr.RandomNoise(),
+            # tr.RandomNoise(),
             # tr.RandomSharpness(),
             tr.RandomScaleCrop(base_size=self.args.base_size, crop_size=self.args.crop_size),  # 随机尺寸裁剪
             tr.RandomGaussianBlur(),

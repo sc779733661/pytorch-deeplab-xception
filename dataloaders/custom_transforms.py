@@ -101,7 +101,7 @@ class RandomBright(object):
     def __call__(self, sample):
         img = sample['image']
         mask = sample['label']
-        if random.random() < 0.5:
+        if random.random() < 0.6:
             brightness = random.randint(5, 15) * 0.1
             enh_bri = ImageEnhance.Brightness(img)
             img = enh_bri.enhance(brightness)
@@ -114,7 +114,7 @@ class RandomColor(object):
     def __call__(self, sample):
         img = sample['image']
         mask = sample['label']
-        if random.random() < 0.5:
+        if random.random() < 0.6:
             color = random.randint(5, 15) * 0.1
             enh_col = ImageEnhance.Color(img)
             img = enh_col.enhance(color)
@@ -127,8 +127,8 @@ class RandomContrast(object):
     def __call__(self, sample):
         img = sample['image']
         mask = sample['label']
-        if random.random() < 0.5:
-            contrast = random.randint(8, 16) * 0.1
+        if random.random() < 0.6:
+            contrast = random.randint(5, 16) * 0.1
             enh_con = ImageEnhance.Contrast(img)
             img = enh_con.enhance(contrast)
 

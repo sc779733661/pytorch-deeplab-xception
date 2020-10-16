@@ -88,12 +88,18 @@ You can visualize in real time the train and test losses, the weights and gradie
 
 `tensorboard --logdir=runs`
 
+visualize GPU：
+
+watch -n 10 nvidia-smi
+
 ### predict
 
 python predict.py --in-path your_file --out-path your_dst_file
 
 such as:
 python predict.py --in-path E:\sc\image_data\meter\meter_seg\images\val --ckpt run\meter_seg_voc\deeplab-resnet\model_best.pth.tar --backbone resnet
+
+python predict.py --in-path /home/y/sc_dev/dilun/image_data/meter/meter_seg/images/val/ --ckpt run/meter_seg_voc/deeplab-mobilenet/model_best.pth.tar --backbone mobilenet
 
 
 ### Acknowledgement
