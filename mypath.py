@@ -11,7 +11,7 @@ class Path(object):
             return '/path/to/datasets/coco/'
         elif dataset == 'meter_seg_voc':
             # return 'E:\sc\image_data\meter\meter_seg_voc'
-            return '/home/y/sc_dev/dilun/image_data/meter/meter_seg_voc'
+            return '/home/y/sc_dev/dilun/image_data/circular_voc'
         else:
             print('Dataset {} not available.'.format(dataset))
             raise NotImplementedError

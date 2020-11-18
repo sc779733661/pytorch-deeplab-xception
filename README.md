@@ -49,6 +49,12 @@ Follow steps below to train your model:
 
 0. Configure your dataset path in [mypath.py](https://github.com/jfzhang95/pytorch-deeplab-xception/blob/master/mypath.py).
 
+   1.fix class num: merter_seg_voc.py: 'NUM_CLASSES = 3'(line:14) to your class num,
+   'base_dir=Path.db_root_dir('meter_seg_voc')' (line:18) to your dataset name in mypath.py,
+   
+   2.fix dataloaders/utils.py: 'def get_meter_labels()'(line:106) np.asarray to your mask colors,
+   and 'n_classes = 3'(line:31) to your class num.
+
 1. Input arguments: (see full input arguments via python train.py --help):
     ```Shell
     usage: train.py [-h] [--backbone {resnet,xception,drn,mobilenet}]
