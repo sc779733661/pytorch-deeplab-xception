@@ -101,4 +101,4 @@ if __name__ == "__main__":
 # python predict.py --in-path E:\sc\image_data\meter\meter_seg\images\val 
 #                   --ckpt run\meter_seg_voc\deeplab-mobilenet\model_best.pth.tar --backbone mobilenet
 # python predict.py --in-path E:\sc\image_data\meter\meter_seg\images\val 
-#                   --ckpt run\meter_seg_voc\deeplab-resnet\model_best.pth.tar --backbone resnet
+#                   --ckpt run\meter_seg_voc\deeplab-resnet\model_best.pth.tar --backbone resnet  --num_classes 3
