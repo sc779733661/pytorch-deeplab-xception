@@ -86,6 +86,7 @@ def main():
 
         grid_image = make_grid(decode_seg_map_sequence(torch.max(output[:3], 1)[1].detach().cpu().numpy()),
                                 3, normalize=False, range=(0, 255))
+        # print(grid_image.size())
         save_image(grid_image,args.in_path+"/"+"{}_mask.png".format(name[0:-4]))
         u_time = time.time()
         img_time = u_time-s_time

@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# import sys
-# sys.path.append("..")
+import sys
+sys.path.append("..")
 from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
 from modeling.aspp import build_aspp
 from modeling.decoder import build_decoder
@@ -30,6 +30,7 @@ class DeepLab(nn.Module):
         x, low_level_feat = self.backbone(input)
         x = self.aspp(x)
         x = self.decoder(x, low_level_feat)
+        # print(x.size())
         x = F.interpolate(x, size=input.size()[2:], mode='bilinear', align_corners=True)
 
         return x
@@ -73,11 +74,12 @@ class DeepLab(nn.Module):
                             if p.requires_grad:
                                 yield p
 
+
 if __name__ == "__main__":
     model = DeepLab(backbone='resnet', output_stride=16)
     model.eval()
     input = torch.rand(1, 3, 513, 513)
     output = model(input)
+    a = output[:3]
     print(output.size())
-
-
+    print(a.size())

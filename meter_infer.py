@@ -14,6 +14,12 @@ import PIL.ImageDraw
 import PIL.ImageFont
 import json
 from torchvision import transforms
+import matplotlib
+from jit_functions.jit import *
+
+np.set_printoptions(threshold=np.inf)  # 控制输出的值的个数为threshold，其余以...代替,inf表示一个无限大的正数
+font_path = osp.join(osp.dirname(matplotlib.__file__), "mpl-data/fonts/ttf", "DejaVuSansMono.ttf")
+
 
 def rectangle(src, aabb1, aabb2, fill=None, outline=None, width=0):
     if outline is not None:
@@ -30,6 +36,7 @@ def rectangle(src, aabb1, aabb2, fill=None, outline=None, width=0):
 
     return np.array(dst)
 
+
 def text_size(text, size, font_path=None):
     font = PIL.ImageFont.truetype(font=font_path, size=size)
     lines = text.splitlines()
@@ -37,6 +44,7 @@ def text_size(text, size, font_path=None):
     longest_line = max(lines, key=len)
     width, height = font.getsize(longest_line)
     return height * n_lines, width
+
 
 def draw_text(src, yx, text, size, color=(0, 0, 0), font_path=None):
     dst = PIL.Image.fromarray(src)
@@ -46,6 +54,7 @@ def draw_text(src, yx, text, size, color=(0, 0, 0), font_path=None):
     font = PIL.ImageFont.truetype(font=font_path, size=size)
     draw.text(xy=(x1, y1), text=text, fill=color, font=font)
     return np.array(dst)
+
 
 def label_colormap(n_label=256, value=None):
     def bitget(byteval, idx):
@@ -82,7 +91,10 @@ def label_colormap(n_label=256, value=None):
       
     return cmap
 
-def label2rgb(label,img=None,alpha=0.5,label_names=None,font_size=30,thresh_suppress=0,colormap=None,loc="centroid",font_path=None,):
+
+def label2rgb(label, img=None, alpha=0.5, label_names=None, font_size=30,
+              thresh_suppress=0, colormap=None,
+              loc="centroid", font_path=None):
     if colormap is None:
         colormap = label_colormap()
 
@@ -164,11 +176,6 @@ def label2rgb(label,img=None,alpha=0.5,label_names=None,font_size=30,thresh_supp
     return res
 
 
-np.set_printoptions(threshold=np.inf)
-
-import matplotlib
-font_path = osp.join(osp.dirname(matplotlib.__file__), "mpl-data/fonts/ttf", "DejaVuSansMono.ttf")
-
 class meter_mask_info():
     def __init__(self, _mask, _dict=None):
         H, W = _mask.shape
@@ -176,19 +183,26 @@ class meter_mask_info():
         self.circle_radius = min(H, W) / 2
         self.line_height = int(self.circle_radius*0.6)
         self.line_width = int(self.circle_radius*2*math.pi)
-        self.kernel_size = 3
+        self.kernel_size = 3  # magic num
         self.label_maps = _mask
         self.infos_dict = _dict
-        
-    def reading_process(self, ):
+
+    def reading_process(self):
         # Normalizing and corrosion semantic map
         norm_images = self.norm_erode_image(self.label_maps)
         # Convert the circular meter into rectangular meter
-        line_images = self.creat_line_image(norm_images)
+        line_images = creat_line_image(norm_images,
+                                       self.line_height,
+                                       self.line_width,
+                                       self.circle_radius,
+                                       self.circle_center)
         # Convert the 2d meter into 1d meter
-        scale_data, pointer_data = self.convert_1d_data(line_images)
+        scale_data, pointer_data = convert_1d_data(
+                                        line_images,
+                                        self.line_width,
+                                        self.line_height)
         # Fliter scale data whose value is lower than the mean value
-        self.scale_mean_filtration(scale_data)
+        scale_mean_filtration(scale_data, self.line_width)
         # Get scale_num, scales and ratio of meters
         result = self.get_meter_reader(scale_data, pointer_data)
         #PIL.Image.fromarray(label_colormap()[line_images]).save(path)
@@ -196,12 +210,13 @@ class meter_mask_info():
         result = self.fix_initial_scale(result)
         value = self.get_value(result)
         return value
-        
+
     def norm_erode_image(self, meter_image):
         kernel = np.ones((self.kernel_size, self.kernel_size), np.uint8)
         erode_image = cv2.erode(meter_image, kernel)
         return erode_image
 
+    '''
     def creat_line_image(self, meter_image):
         line_image = np.zeros((self.line_height, self.line_width), dtype=np.uint8)
         for row in range(self.line_height):
@@ -212,7 +227,9 @@ class meter_mask_info():
                 y = int(self.circle_center[1] - rho * math.sin(theta) + 0.5)
                 line_image[row, col] = meter_image[x, y]
         return line_image
+    '''
 
+    '''
     def convert_1d_data(self, meter_image):
         scale_data = np.zeros((self.line_width), dtype=np.uint8)
         pointer_data = np.zeros((self.line_width), dtype=np.uint8)
@@ -223,13 +240,16 @@ class meter_mask_info():
                 elif meter_image[row, col] == 2:
                     scale_data[col] += 1
         return scale_data, pointer_data
+    '''
 
+    '''
     def scale_mean_filtration(self, scale_data):
         mean_data = np.mean(scale_data)
         for col in range(self.line_width):
             if scale_data[col] < mean_data:
                 scale_data[col] = 0
-    
+    '''
+
     def get_meter_reader(self, scale_data, pointer_data):
         scale_flag = False
         pointer_flag = False
@@ -350,12 +370,17 @@ class meter_mask_info():
             value = 0
         return value
 
+
 def load_json(path):
-    with open(path,"r") as f:
-        d=json.load(f)
+    with open(path, "r") as f:
+        d = json.load(f)
     return d
 
+
 def main():
+    Loss_sum = 0
+    Num_img = 0
+    map_dict = load_json(r"json/mapping.json")
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
     parser.add_argument("--in_path", type=str, required=True, help="image to test")
     parser.add_argument("--out_path", type=str, required=True, help="mask image to save")
@@ -367,74 +392,83 @@ def main():
     parser.add_argument("--dataset", type=str, default="pascal", choices=["pascal", "coco", "cityscapes","invoice"], help="dataset name (default: pascal)")
     parser.add_argument("--crop_size", type=int, default=513, help="crop image size")
     parser.add_argument("--num_classes", type=int, default=3, help="crop image size")
+    parser.add_argument("--save_reasultimg", type=bool, default=False, help="save reasult image")
     parser.add_argument("--sync_bn", type=bool, default=None, help="whether to use sync bn (default: auto)")
     parser.add_argument("--freeze_bn", type=bool, default=False, help="whether to freeze bn parameters (default: False)")
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
-    
 
     if not osp.exists(args.out_path):
         os.makedirs(args.out_path)
-    
     if args.cuda:
         try:
             args.gpu_ids = [int(s) for s in args.gpu_ids.split(",")]
         except ValueError:
             raise ValueError("Argument --gpu_ids must be a comma-separated list of integers only")
-
     if args.sync_bn is None:
         if args.cuda and len(args.gpu_ids) > 1:
             args.sync_bn = True
         else:
             args.sync_bn = False
-    map_dict = load_json(r"mapping.json")
+
     model_s_time = time.time()
-    model = DeepLab(num_classes=args.num_classes, backbone=args.backbone, output_stride=args.out_stride, sync_bn=args.sync_bn, freeze_bn=args.freeze_bn)
-    ckpt = torch.load(args.ckpt, map_location="cpu")
-    model.load_state_dict(ckpt["state_dict"])
+    model = DeepLab(num_classes=args.num_classes,
+                    backbone=args.backbone,
+                    output_stride=args.out_stride,
+                    sync_bn=args.sync_bn,
+                    freeze_bn=args.freeze_bn)
+    ckpt = torch.load(args.ckpt, map_location='cpu')
+    model.load_state_dict(ckpt['state_dict'])
     model = model.cuda()
     model_u_time = time.time()
     model_load_time = model_u_time - model_s_time
     print("model load time is {}".format(model_load_time))
-    composed_transforms = transforms.Compose([tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)), tr.ToTensor()])
-    L = 0
-    N = 0
+    composed_transforms = transforms.Compose([
+        tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+        tr.ToTensor()])
+
     for name in os.listdir(args.in_path):
-        s_time = time.time()
-        image = PIL.Image.open(args.in_path+"/"+name)
+        start_time = time.time()
+        image = PIL.Image.open(args.in_path + "/" + name).convert('RGB')
         target = image.convert("L")
         sample = {"image": image, "label": target}
         tensor_in = composed_transforms(sample)["image"].unsqueeze(0)
         model.eval()
-        if args.cuda: tensor_in = tensor_in.cuda()
+        if args.cuda:
+            tensor_in = tensor_in.cuda()
 
         with torch.no_grad():
             output = model(tensor_in)
-        
+        end_model_time = time.time()
         label = torch.max(output[:3], 1)[1].detach().squeeze().cpu().numpy()
-
-        meter = meter_mask_info(label.astype(np.uint8), map_dict[osp.splitext(name)[0]])
+        meter = meter_mask_info(label.astype(np.uint8),
+                                map_dict[osp.splitext(name)[0]])
         read = meter.reading_process()
-        
         real = map_dict[osp.splitext(name)[0]]["scale_read"]
         loss = abs(real - read) / (real + 1e-8)
-        label_names = ["{:.3f}".format(real),"{:.3f}".format(read),"{:.3f}".format(loss)]
 
+        label_names = ["{:.3f}".format(real), "{:.3f}".format(read),
+                       "{:.3f}".format(loss)]
         #alpha = 0.4
         #lbl_viz = (1 - alpha) * np.array(image, float) + alpha * (label_colormap()[label]).astype(float)
         #lbl_viz = np.clip(lbl_viz.round(), 0, 255).astype(np.uint8)
-        lbl_viz = label2rgb(label=label, img=np.array(image), label_names=label_names, loc="rb", font_path=font_path)
-        PIL.Image.fromarray(lbl_viz).save(osp.join(args.out_path,name))
-        u_time = time.time()
-        img_time = u_time-s_time
-        print("image:{} time: {} real: {} read: {} loss: {} \n".format(name,img_time,real,read,loss))
-        L += loss
-        N += 1
-    print("image save in in_path. avg_loss:{:.3f}".format(L/N))
+        if args.save_reasultimg:
+            lbl_viz = label2rgb(label=label, img=np.array(image), label_names=label_names, loc="rb", font_path=font_path)
+            PIL.Image.fromarray(lbl_viz).save(osp.join(args.out_path, name))
+
+        end_time = time.time()
+        modeltime = end_model_time-start_time
+        img_time = end_time-start_time
+        print("image:{} modeltime: {} totaltime: {} real: {} read: {} loss: {} \n".format(name, modeltime, img_time, real, read, loss))
+        Loss_sum += loss
+        Num_img += 1
+    print("image save in in_path. avg_loss:{:.3f}".format(Loss_sum/Num_img))
 
 if __name__ == "__main__":
     main()
 
 # cd C:\Users\admin\Downloads\pytorch-deeplab-xception\
 # conda activate pytorch
-# python meter_infer.py --in_path _images_ --out_path _output_ --ckpt run\meter_seg_voc\deeplab-resnet\model_best2.pth.tar --backbone resnet
+# python meter_infer.py --in_path _images_ --out_path _output_ --ckpt run\meter_seg_voc\deeplab-resnet\model_best.pth.tar --backbone resnet
+# python meter_infer.py --in_path E:\sc\image_data\ttt\test 
+#                       --out_path E:\sc\image_data\ttt\resualt --ckpt run\meter_seg_voc\deeplab-resnet\model_best.pth.tar --backbone resnet

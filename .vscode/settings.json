@@ -1,5 +1,6 @@
 {
     "python.pythonPath": "D:\\ProgramData\\Anaconda3\\envs\\pytorch\\python.exe",
+    // "python.pythonPath": "/home/y/anaconda3/envs/pytorch/bin/python",
     "editor.snippetSuggestions": "bottom",
     "editor.suggest.snippetsPreventQuickSuggestions": false
 }

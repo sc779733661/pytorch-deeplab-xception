@@ -106,4 +106,9 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-/.vscode
+.vscode
+
+*.onnx
+*.c
+
+release/

@@ -48,6 +48,8 @@ class VOCSegmentation(Dataset):
 
             for ii, line in enumerate(lines):
                 _image = os.path.join(self._image_dir, line + ".jpg")
+                if not os.path.exists(_image):
+                    _image = os.path.join(self._image_dir, line + ".png")
                 _cat = os.path.join(self._cat_dir, line + ".png")
                 assert os.path.isfile(_image)
                 assert os.path.isfile(_cat)
