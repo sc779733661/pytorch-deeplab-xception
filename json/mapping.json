@@ -2,7 +2,7 @@
   "086587a304ec4bba856d3a1393250b77": {
     "scale_max": 0.6,
     "scale_num": 31,
-    "scale_read": 0.022
+    "scale_read": 0.021
   },
   "0cfe20c3c3a04172be02f0eebc301764": {
     "scale_max": 100.0,
@@ -17,7 +17,7 @@
   "1ea05f9a34234d97836419dcda6d9d7a": {
     "scale_max": 6.0,
     "scale_num": 31,
-    "scale_read": 0.42
+    "scale_read": 0.44
   },
   "215142a15db5482d9e1accfafbb7276f": {
     "scale_max": 100.0,
@@ -112,7 +112,7 @@
   "4b963d3199ce4426a0b6952a5afde4d7": {
     "scale_max": 0.25,
     "scale_num": 26,
-    "scale_read": 0.019
+    "scale_read": 0.017
   },
   "4e36d2947a2c4361a64c95dd1aa8c518": {
     "scale_max": 4.0,
@@ -147,7 +147,7 @@
   "61e5f6230f02470b8defec9507a8e0c5": {
     "scale_max": 6.0,
     "scale_num": 31,
-    "scale_read": 0.1
+    "scale_read": 0.2
   },
   "64095a0bca0a42e696c6075b96308a9b": {
     "scale_max": 100.0,
@@ -502,7 +502,7 @@
   "d2ffd016d0964225a059c0af27d7a6f6": {
     "scale_max": 0.6,
     "scale_num": 60,
-	"scale_read": 0.08
+	"scale_read": 0.078
   },
   "d5a10ded87a94fc3912189daa8e43e93": {
     "scale_max": 100.0,
@@ -582,7 +582,7 @@
   "ec9e02df26af49538facf7f07b68ecfb": {
     "scale_max": 60.0,
     "scale_num": 60,
-	"scale_read": 10.05
+	"scale_read": 10.5
   },
   "ed2195baf85e4113921f87c4ca4848ca": {
     "scale_max": 100.0,
@@ -607,7 +607,7 @@
   "ef9bba7dc6724cdc898fcb6e5391ddd8": {
     "scale_max": 60.0,
     "scale_num": 60,
-	"scale_read": 10.05
+	"scale_read": 10.5
   },
   "f0390da23d1b4233b79387c3741f3047": {
     "scale_max": 100.0,
@@ -620,7 +620,7 @@
 	"scale_read": 0.1
   },
   "f42dda1c28a54dcda5d91ffdfdedaa57": {
-    "scale_max": 0.16,
+    "scale_max": 1.6,
     "scale_num": 81,
 	"scale_read": 0.25
   },

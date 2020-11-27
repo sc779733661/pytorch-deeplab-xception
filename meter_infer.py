@@ -380,6 +380,7 @@ def load_json(path):
 def main():
     Loss_sum = 0
     Num_img = 0
+    num_ng = 0
     map_dict = load_json(r"json/mapping.json")
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
     parser.add_argument("--in_path", type=str, required=True, help="image to test")
@@ -453,16 +454,23 @@ def main():
         #lbl_viz = (1 - alpha) * np.array(image, float) + alpha * (label_colormap()[label]).astype(float)
         #lbl_viz = np.clip(lbl_viz.round(), 0, 255).astype(np.uint8)
         if args.save_reasultimg:
-            lbl_viz = label2rgb(label=label, img=np.array(image), label_names=label_names, loc="rb", font_path=font_path)
+            lbl_viz = label2rgb(label=label, img=np.array(image),
+                                label_names=label_names, loc="rb",
+                                font_path=font_path)
             PIL.Image.fromarray(lbl_viz).save(osp.join(args.out_path, name))
+            print('image save in out_path.')
 
         end_time = time.time()
         modeltime = end_model_time-start_time
         img_time = end_time-start_time
-        print("image:{} modeltime: {} totaltime: {} real: {} read: {} loss: {} \n".format(name, modeltime, img_time, real, read, loss))
+        print("image:{} model time: {:.5f}s total time: {:.5f}s real value: {:.6f} read value: {:.6f} loss: {:.5f} \n".format(
+                name, modeltime, img_time, real, read, loss))
+        if loss < 0.05:
+            num_ng += 1
         Loss_sum += loss
         Num_img += 1
-    print("image save in in_path. avg_loss:{:.3f}".format(Loss_sum/Num_img))
+    print("avg_loss:{:.3f} ,accuracy:{:.3f}% ,right_num:{}".format(
+          Loss_sum/Num_img, num_ng/Num_img*100, num_ng))
 
 if __name__ == "__main__":
     main()
@@ -470,5 +478,5 @@ if __name__ == "__main__":
 # cd C:\Users\admin\Downloads\pytorch-deeplab-xception\
 # conda activate pytorch
 # python meter_infer.py --in_path _images_ --out_path _output_ --ckpt run\meter_seg_voc\deeplab-resnet\model_best.pth.tar --backbone resnet
-# python meter_infer.py --in_path E:\sc\image_data\ttt\test 
-#                       --out_path E:\sc\image_data\ttt\resualt --ckpt run\meter_seg_voc\deeplab-resnet\model_best.pth.tar --backbone resnet
+# python meter_infer.py --in_path E:\sc\image_data\ttt\test --out_path E:\sc\image_data\ttt\resualt 
+#                       --ckpt run\meter_seg_voc\deeplab-resnet\model_best.pth.tar --backbone resnet --save_reasultimg False
