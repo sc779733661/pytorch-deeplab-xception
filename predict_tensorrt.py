@@ -9,6 +9,9 @@ from PIL import Image
 from torchvision import transforms
 from dataloaders.utils import  *
 from torchvision.utils import make_grid, save_image
+from torch2trt import torch2trt
+from torch2trt import TRTModule
+
 
 def main():
 
@@ -58,10 +61,22 @@ def main():
                     output_stride=args.out_stride,
                     sync_bn=args.sync_bn,
                     freeze_bn=args.freeze_bn)
+    
+    # # 1.转换torch2trt
+    # ckpt = torch.load(args.ckpt, map_location='cpu')
+    # model.load_state_dict(ckpt['state_dict'])
+    # # torch2trt model
+    # model = model.cuda().half().eval()
+    # input = torch.ones(1, 3, 513, 513).cuda().float().half()
+    # model_trt = torch2trt(model, [input], fp16_mode=True)
+    # # save model_trt
+    # # torch.save(model_trt.state_dict(), 'run/meter_seg_voc/deeplab-resnet/model_trt_best.pth')
+    # # print('model_trt saved in path')
+    
+    # 2.直接加载trt 模型
+    model_trt = TRTModule()
+    model_trt.load_state_dict(torch.load(args.ckpt))
 
-    ckpt = torch.load(args.ckpt, map_location='cpu')
-    model.load_state_dict(ckpt['state_dict'])
-    model = model.cuda()
     model_u_time = time.time()
     model_load_time = model_u_time-model_s_time
     print("model load time is {}".format(model_load_time))
@@ -77,14 +92,14 @@ def main():
         target = target.resize((513, 513))
         sample = {'image': image, 'label': target}
         tensor_in = composed_transforms(sample)['image'].unsqueeze(0)
+        # print(tensor_in.shape)
 
-        model.eval()
         if args.cuda:
-            tensor_in = tensor_in.cuda()
+            tensor_in = tensor_in.cuda().float().half()
         with torch.no_grad():
-            output = model(tensor_in)
-
-        grid_image = make_grid(decode_seg_map_sequence(torch.max(output[:3], 1)[1].detach().cpu().numpy()),
+            output_trt = model_trt(tensor_in)
+        
+        grid_image = make_grid(decode_seg_map_sequence(torch.max(output_trt[:3], 1)[1].detach().cpu().float().numpy()),
                                 3, normalize=False, range=(0, 255))
         # print(grid_image.size())
         # save_image(grid_image,args.in_path+"/"+"{}_mask.png".format(name[0:-4]))
@@ -97,5 +112,5 @@ if __name__ == "__main__":
 
 # python predict.py --in-path E:\sc\image_data\meter\meter_seg\images\val 
 #                   --ckpt run\meter_seg_voc\deeplab-mobilenet\model_best.pth.tar --backbone mobilenet
-# python predict.py --in-path E:\sc\image_data\meter\meter_seg\images\val 
-#                   --ckpt run\meter_seg_voc\deeplab-resnet\model_best.pth.tar --backbone resnet  --num_classes 3
+# python predict_tensorrt.py --in-path /home/y/sc_dev/dilun/image_data/meter/meter_seg/images/test 
+#                   --ckpt run/meter_seg_voc/deeplab-resnet/model_trt_best.pth --backbone resnet  --num_classes 3
