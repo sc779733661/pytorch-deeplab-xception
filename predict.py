@@ -6,6 +6,7 @@ import time
 from modeling.deeplab import *
 from dataloaders import custom_transforms as tr
 from PIL import Image
+import cv2
 from torchvision import transforms
 from dataloaders.utils import  *
 from torchvision.utils import make_grid, save_image
@@ -67,14 +68,13 @@ def main():
     print("model load time is {}".format(model_load_time))
 
     composed_transforms = transforms.Compose([
+        tr.Resize(crop_size=args.crop_size),
         tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
         tr.ToTensor()])
     for name in os.listdir(args.in_path):
         s_time = time.time()
         image = Image.open(args.in_path+"/"+name).convert('RGB')
         target = Image.open(args.in_path+"/"+name).convert('L')
-        image = image.resize((513, 513))
-        target = target.resize((513, 513))
         sample = {'image': image, 'label': target}
         tensor_in = composed_transforms(sample)['image'].unsqueeze(0)
 

@@ -89,7 +89,7 @@ You can visualize in real time the train and test losses, the weights and gradie
 `tensorboard --logdir=runs`
 
 such as:
-tensorboard --logr=./run/meter_seg_voc/deeplab-resnet/experiment_0
+tensorboard --logdir=./run/meter_seg_voc/deeplab-resnet/experiment_0
 
 visualize GPU：
 

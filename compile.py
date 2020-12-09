@@ -1,6 +1,7 @@
 import glob
 import shutil
 import os
+import sys
 
 from distutils.core import setup
 from distutils.extension import Extension
@@ -11,6 +12,7 @@ from pathlib import Path
 # [文件名] = “路径”
 module_path_map = {}
 module_path_map["meter_infer"] = "."
+module_path_map["meter_mask_info"] = "."
 module_path_map["deeplab"] = "modeling/"
 module_path_map["aspp"] = "modeling/"
 module_path_map["decoder"] = "modeling/"
@@ -42,7 +44,13 @@ setup(
 )
 
 # 生成release
-for file in glob.glob('*.pyd'):
+file_type = ''
+if sys.platform == 'linux':
+    file_type = '*.so'
+elif sys.platform == 'win32':
+    file_type = '*.pyd'
+
+for file in glob.glob(file_type):
     path_to_module = Path(module_path_map[file.split('.')[0]])
     print('Creating {}'.format(str(Path('release') / path_to_module)))
     (Path('release') / path_to_module).mkdir(parents=True, exist_ok=True)
@@ -60,7 +68,8 @@ print('Copying {} to {}'.format('modeling/__init__.py', str(Path('release'))))
 shutil.copy(Path('main.py'), Path('release'))
 (Path('release') / 'json').mkdir(parents=True, exist_ok=True)
 shutil.copy(Path('json/mapping.json'), Path('release/json'))
-shutil.copytree(Path('jit_functions'), Path('release/jit_functions'))
+(Path('release') / 'jit_functions').mkdir(parents=True, exist_ok=True)
+shutil.copy(Path('jit_functions/jit.py'), Path('release/jit_functions'))
 (Path('release') / 'run_model').mkdir(parents=True, exist_ok=True)
 shutil.copy(Path('run/meter_seg_voc/deeplab-resnet/model_best.pth.tar'),
             Path('release/run_model'))
