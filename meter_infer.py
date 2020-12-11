@@ -9,7 +9,7 @@ import math
 import cv2
 from modeling.deeplab import *
 from dataloaders import custom_transforms as tr
-import PIL.Image
+from PIL import Image
 import PIL.ImageDraw
 import PIL.ImageFont
 import json
@@ -24,12 +24,12 @@ def rectangle(src, aabb1, aabb2, fill=None, outline=None, width=0):
     if fill is not None:
         fill = tuple(fill)
 
-    dst = PIL.Image.fromarray(src)
+    dst = Image.fromarray(src)
     draw = PIL.ImageDraw.ImageDraw(dst)
 
     y1, x1 = aabb1
     y2, x2 = aabb2
-    draw.rectangle( xy=(x1, y1, x2, y2), fill=fill, outline=outline, width=width )
+    draw.rectangle(xy=(x1, y1, x2, y2), fill=fill, outline=outline, width=width )
 
     return np.array(dst)
 
@@ -44,7 +44,7 @@ def text_size(text, size, font_path=None):
 
 
 def draw_text(src, yx, text, size, color=(0, 0, 0), font_path=None):
-    dst = PIL.Image.fromarray(src)
+    dst = Image.fromarray(src)
     draw = PIL.ImageDraw.ImageDraw(dst)
     y1, x1 = yx
     color = tuple(color)
@@ -72,20 +72,19 @@ def label_colormap(n_label=256, value=None):
 
     if value is not None:
         rgb = cmap.reshape(1, -1, 3)
-        hsv = PIL.Image.fromarray(rgb, mode="RGB")
+        hsv = Image.fromarray(rgb, mode="RGB")
         hsv = hsv.convert("HSV")
         hsv = np.array(hsv)
-        
-        
+
         if isinstance(value, float):
             hsv[:, 1:, 2] = hsv[:, 1:, 2].astype(float) * value
         else:
             assert isinstance(value, int)
             hsv[:, 1:, 2] = value
-        rgb = PIL.Image.fromarray(hsv, mode="HSV")
+        rgb = Image.fromarray(hsv, mode="HSV")
         rgb = rgb.convert("RGB")
         cmap = np.array(rgb).reshape(-1, 3)
-      
+
     return cmap
 
 
@@ -133,12 +132,12 @@ def label2rgb(label, img=None, alpha=0.5, label_names=None, font_size=30,
             text = label_names[label_i]
             height, width = text_size( text, size=font_size, font_path=font_path )
             print(res[y, x])
-            gray = PIL.Image.fromarray(np.asarray(res[y, x], dtype=np.uint8).reshape(1, 1, 3)).convert("L")
+            gray = Image.fromarray(np.asarray(res[y, x], dtype=np.uint8).reshape(1, 1, 3)).convert("L")
 
             if np.array(gray).sum() > 170:
                 color = (0, 0, 0)
             else:
-                color =(255, 255, 255)
+                color = (255, 255, 255)
             
             res = draw_text(res, yx=(y-height//2, x-width//2), text=text, color=color, size=font_size, font_path=font_path, )
     elif loc in ["rb", "lt"]:
@@ -187,7 +186,9 @@ def main():
     Num_img = 0
     num_ng = 0
     time_sum = 0
-    map_dict = load_json(r"json/mapping.json")
+    original_scale_num = 0
+    model_score = 0
+    map_dicts = load_json(r"json/mapping.json")
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
     parser.add_argument("--in_path", type=str, required=True, help="image to test")
     parser.add_argument("--out_path", type=str, required=True, help="mask image to save")
@@ -239,8 +240,10 @@ def main():
 
     for name in os.listdir(args.in_path):
         start_time = time.time()
-        image = PIL.Image.open(os.path.join(args.in_path, name)).convert('RGB')
+        image = Image.open(os.path.join(args.in_path, name)).convert('RGB')
         target = image.convert("L")
+        image = cv2.cvtColor(np.asarray(image), cv2.COLOR_RGB2BGR)  # PIL-CV2
+        # target = cv2.cvtColor(np.asarray(mask), cv2.COLOR_RGB2BGR)  # PIL-CV2
         sample = {"image": image, "label": target}
         tensor_in = composed_transforms(sample)["image"].unsqueeze(0)
         model.eval()
@@ -251,11 +254,15 @@ def main():
         end_model_time = time.time()
 
         label = torch.max(output[:3], 1)[1].detach().squeeze().cpu().numpy()
-        meter = Mmi.Meter_mask_info(label.astype(np.uint8),
-                    map_dict[osp.splitext(name)[0]])
-        read = meter.reading_process()
-        real = map_dict[osp.splitext(name)[0]]["scale_read"]
+        map_dict = map_dicts[osp.splitext(name)[0]]
+        meter = Mmi.Meter_mask_info(label.astype(np.uint8), map_dict)
+        read, original_scale_num = meter.reading_process()
+        real = map_dict["scale_read"]
+        min_scale = map_dict["scale_max"] / (map_dict["scale_num"]-1)
         loss = abs(real - read) / (real + 1e-8)
+        min_scale_loss = abs(real - read) / min_scale
+        if original_scale_num == map_dict["scale_num"]:
+            model_score += 1
 
         #alpha = 0.4
         #lbl_viz = (1 - alpha) * np.array(image, float) + alpha * (
@@ -263,26 +270,28 @@ def main():
         #lbl_viz = np.clip(lbl_viz.round(), 0, 255).astype(np.uint8)
         if args.save_reasultimg:
             label_names = ["{:.3f}".format(real), "{:.3f}".format(read),
-                       "{:.3f}".format(loss)]
-            image = image.resize((513, 513))
+                       "{:.3f}".format(min_scale_loss)]
+            # image = image.resize((args.crop_size, args.crop_size))
+            image = cv2.resize(np.asarray(image), (args.crop_size, args.crop_size))
+            image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
             lbl_viz = label2rgb(label=label, img=np.array(image),
                                 label_names=label_names, loc="rb",
                                 font_path=font_path)
-            PIL.Image.fromarray(lbl_viz).save(osp.join(args.out_path, name))
+            Image.fromarray(lbl_viz).save(osp.join(args.out_path, name))
             print('image save in out_path.')
 
         end_time = time.time()
         modeltime = end_model_time-start_time
         img_time = end_time-start_time
-        print("image:{} model time: {:.5f}s total time: {:.5f}s real value: {:.6f} read value: {:.6f} loss: {:.5f} \n".format(
-            name, modeltime, img_time, real, read, loss))
-        if loss < 0.05:
+        print("image:{} model time:{:.5f}s total time:{:.5f}s real value:{:.6f} read value:{:.6f} loss:{:.5f} min_scale_loss:{:.5f}\n".format(
+            name, modeltime, img_time, real, read, loss, min_scale_loss))
+        if min_scale_loss > 1:
             num_ng += 1
-        Loss_sum += loss
+        Loss_sum += min_scale_loss
         Num_img += 1
         time_sum += img_time
-    print("avg_loss:{:.3f} ,accuracy:{:.3f}% ,right_num:{} ,total_num:{} ,avg_time:{:.5f}".format(
-        Loss_sum/Num_img, num_ng/Num_img*100, num_ng, Num_img, time_sum/Num_img))
+    print("Model_score:{:.3f} ,Avg_loss:{:.3f} ,Accuracy(min_scale_loss<1):{:.3f}% ,Wrong_num:{} ,Total_num:{} ,Avg_time:{:.5f}".format(
+        model_score/Num_img, Loss_sum/Num_img, (Num_img - num_ng)/Num_img*100, num_ng, Num_img, time_sum/Num_img))
 
 if __name__ == "__main__":
     main()

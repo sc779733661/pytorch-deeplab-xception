@@ -93,6 +93,9 @@ class Meter_mask_info():
         scale_range_median = 0  # 刻度间隔中位数
         pointer_location = 0
         max_pointer_location = 0
+        scale_start = 0  # 刻度首位置
+        scale_end = 0  # 尾刻度位置
+        original_scale_num = 0  # 原始模型推理的刻度数，用来评价模型好坏
         for i in range(self.line_width - 1):
             if scale_data[i] > 0 and scale_data[i + 1] > 0:
                 if scale_flag == False:
@@ -106,8 +109,10 @@ class Meter_mask_info():
                     scale_width.append(one_scale_end - one_scale_start)
                     if len(scale_location) > 1:  # 不计算第一个刻度的长度
                         scale_width_mean = (scale_width_mean + (one_scale_end - one_scale_start))/2
+                        scale_end = one_scale_end
                     else:
                         scale_width_first = one_scale_end - one_scale_start
+                        scale_start = one_scale_start
                     one_scale_start = 0
                     one_scale_end = 0
                     scale_flag = False
@@ -125,6 +130,7 @@ class Meter_mask_info():
                     one_pointer_start = 0
                     one_pointer_end = 0
                     pointer_flag = False
+        original_scale_num = len(scale_location)
 
         for i in range(len(scale_location)-1):  # 求刻度间隔
             scale_range.append(scale_location[i+1] - scale_location[i])
@@ -134,7 +140,7 @@ class Meter_mask_info():
                 # print(i+1, scale_width[i+1], scale_width_mean)
                 merge_num = int(scale_width[i+1]/scale_width_mean)
                 if merge_num == 2:  # 最多修复2个刻度合并情况，不然就用角度计算
-                    print('fix merge scale')
+                    # print('fix merge scale')
                     scale_location.pop(i+1)
                     for j in range(merge_num):
                         scale_location.insert(i+1+j, scale_location[i]+scale_range_median*(j+1))
@@ -150,55 +156,55 @@ class Meter_mask_info():
                 if scale_location[i] <= pointer_location and pointer_location < scale_location[i + 1]:
                     scales = i + (pointer_location - scale_location[i]) / (scale_location[i + 1] - scale_location[i] + 1e-05) 
                     break
-            ratio = (pointer_location - scale_location[0]) / (scale_location[scale_num - 1] - scale_location[0] + 1e-05)
+            ratio = (pointer_location - scale_start) / (scale_end - scale_start + 1e-05)
             # 模拟计算首刻度有问题情况下的角度，用不用之后判断
             ratio_add = (pointer_location - scale_location[1] + scale_range_median*2) / (
-                         scale_location[scale_num - 1] - scale_location[1] + scale_range_median*2 + 1e-05)
-            onescalerange_ratio = (scale_location[scale_num - 1] - scale_location[0] + 1e-05) / self.infos_dict["scale_num"]/(
-                                   scale_location[scale_num - 1] - scale_location[0] + 1e-05)
-        result = {'scale_num': scale_num, 'scales': scales, 'ratio': ratio,
+                         scale_end - scale_location[1] + scale_range_median*2 + 1e-05)
+            onescalerange_ratio = (scale_end - scale_start + 1e-05) / (self.infos_dict["scale_num"]-1) / (
+                                   scale_end - scale_start + 1e-05)
+        result = {'scale_num': scale_num,
+                  'scales': scales,
+                  'ratio': ratio,
                   'scale_width_mean': scale_width_mean,
                   'scale_width_first': scale_width_first,
                   'scale_range_median': scale_range_median,
                   'ratio_add': ratio_add,
-                  'onescalerange_ratio': onescalerange_ratio}
-        print(result)
+                  'onescalerange_ratio': onescalerange_ratio,
+                  'original_scale_num': original_scale_num}
+        # print(result)
         return result
 
     def fix_initial_scale(self, result):
-        if (self.infos_dict["scale_num"] - result['scale_num']) > 2:  # 如果检测刻度出错，直接用ratio
-            result['ratio'] = result['ratio']
-            print('ratio')
-            return result
-        # else:
-        #     result['ratio'] = result['ratio_add']
-        #     print('ratio = ratio_add')
-        if ((result['scale_width_first'] > result['scale_width_mean']*1.5) and (
-            result['scale_num'] < self.infos_dict["scale_num"])):  # 如果第一个刻度过宽，说明第一二个刻度合并
-            print('add initial scale.')
-            result['scale_num'] = result['scale_num'] + 1
-            result['scales'] = result['scales'] + 1
-            result['ratio'] = result['ratio'] + result['onescalerange_ratio']*0.5  # 角度要加上0.5个刻度角度
-            print('ratio + onescalerange_ratio*0.5')
-        else:
-            if (self.infos_dict["scale_num"] - result['scale_num']) == 1:  # 没有过宽，但确实合并了
-                print('add 1')
+        if result['scales'] > 0.5:  # 不是指向0刻度的情况下
+            if ((result['scale_width_first'] > result['scale_width_mean']*1.5) and (
+                result['scale_num'] < self.infos_dict["scale_num"])):  # 如果第一个刻度过宽，说明第一二个刻度合并
+                # print('add initial scale.')
                 result['scale_num'] = result['scale_num'] + 1
                 result['scales'] = result['scales'] + 1
+                result['ratio'] = result['ratio'] + result['onescalerange_ratio']*0.5  # 角度要加上0.5个刻度角度
+                # print('ratio + onescalerange_ratio*0.5')
+            else:
+                if (self.infos_dict["scale_num"] - result['scale_num']) == 1:  # 没有过宽，但确实合并了
+                    # print('add 1')
+                    result['scale_num'] = result['scale_num'] + 1
+                    result['scales'] = result['scales'] + 1
+                    result['ratio'] = result['ratio'] + result['onescalerange_ratio']
+                    # print('ratio + onescalerange_ratio')
+                    return result
+            # 如果原表缺少第一个刻度:2种情况：1. 25，26类型，如果是单数且//5%2==1； 2. 30，31类型，如果是双数且//5%2==0
+            if (self.infos_dict["scale_num"]%2 == 1) and (self.infos_dict["scale_num"]//5%2 == 1):  
+                # print('lach 1 scale')
+                result['scales'] = result['scales'] + 1
                 result['ratio'] = result['ratio'] + result['onescalerange_ratio']
-                print('ratio + onescalerange_ratio')
-                return result
-        # 如果原表缺少第一个刻度:2种情况：1. 25，26类型，如果是单数且//5%2==1； 2. 30，31类型，如果是双数且//5%2==0
-        if (self.infos_dict["scale_num"]%2 == 1) and (self.infos_dict["scale_num"]//5%2 == 1):  
-            print('lach 1 scale')
-            result['scales'] = result['scales'] + 1
-            result['ratio'] = result['ratio'] + result['onescalerange_ratio']
-            print('ratio + onescalerange_ratio')
-        elif (self.infos_dict["scale_num"]%2 == 0) and (self.infos_dict["scale_num"]//5%2 == 0):
-            print('lach 1 scale')
-            result['scales'] = result['scales'] + 1
-            result['ratio'] = result['ratio'] + result['onescalerange_ratio']
-            print('ratio + onescalerange_ratio')
+                # print('ratio + onescalerange_ratio')
+            elif (self.infos_dict["scale_num"]%2 == 0) and (self.infos_dict["scale_num"]//5%2 == 0):
+                # print('lach 1 scale')
+                result['scales'] = result['scales'] + 1
+                result['ratio'] = result['ratio'] + result['onescalerange_ratio']
+                # print('ratio + onescalerange_ratio')
+        else:
+            pass
+            # print(result['scales'])
         return result
 
     def get_value(self, result):
@@ -208,6 +214,6 @@ class Meter_mask_info():
         else:  # 如果不等，说明缺少。
             print('lack of scale,use ratio')
             value = result['ratio'] * self.infos_dict["scale_max"]
-        if value < 0.0001:
+        if (value < 0) or (value < (self.infos_dict["scale_max"] / (self.infos_dict["scale_num"] - 1)) * 0.4):
             value = 0
-        return value
+        return value, result['original_scale_num']

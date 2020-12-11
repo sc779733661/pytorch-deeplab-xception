@@ -11,9 +11,9 @@ def creat_line_image(meter_image, line_height, line_width,
         for col in range(line_width):
             theta = math.pi * 2 / line_width * (col + 1)
             rho = circle_radius - row - 1
-            x = int(circle_center[0] + rho * math.cos(theta) + 0.5)
-            y = int(circle_center[1] - rho * math.sin(theta) + 0.5)
-            line_image[row, col] = meter_image[x, y]
+            h = int(circle_center[0] + rho * math.cos(theta) + 0.5)
+            w = int(circle_center[1] - rho * math.sin(theta) + 0.5)
+            line_image[row, col] = meter_image[h, w]
     return line_image
 
 

@@ -33,17 +33,15 @@ class Resize(object):
     """resize image to model size"""
     def __init__(self, crop_size):
         self.size = (int(crop_size), int(crop_size))
-    
+
     def __call__(self, sample):
         img = sample['image']
         mask = sample['label']
-        image = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)  # PIL-CV2
-        # target = cv2.cvtColor(np.asarray(mask), cv2.COLOR_RGB2BGR)  # PIL-CV2
-        image = cv2.resize(image, self.size)
-        target = cv2.resize(np.asarray(mask), self.size)
+        img = cv2.resize(np.asarray(img), self.size)
+        mask = cv2.resize(np.asarray(mask), self.size)
 
-        return {'image': image,
-                'label': target}
+        return {'image': img,
+                'label': mask}
 
 
 class ToTensor(object):
