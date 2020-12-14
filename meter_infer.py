@@ -252,6 +252,7 @@ def main():
         with torch.no_grad():
             output = model(tensor_in)
         end_model_time = time.time()
+        # print(output.shape)
 
         label = torch.max(output[:3], 1)[1].detach().squeeze().cpu().numpy()
         map_dict = map_dicts[osp.splitext(name)[0]]

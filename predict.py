@@ -83,11 +83,18 @@ def main():
             tensor_in = tensor_in.cuda()
         with torch.no_grad():
             output = model(tensor_in)
+        print(output.shape)
+        label = torch.max(output[:3], 1)[1][0].detach().cpu().numpy()
+        print(label.shape, np.unique(label))
+        # rgb_mask = decode_segmap(label, 'meter_seg_voc')
+        # print(np.unique(rgb_mask))
+        # im = Image.fromarray(np.uint8(rgb_mask))
+        # im.save(args.in_path+"/"+"{}_mask.png".format(name[0:-4]))
 
-        grid_image = make_grid(decode_seg_map_sequence(torch.max(output[:3], 1)[1].detach().cpu().numpy()),
-                                3, normalize=False, range=(0, 255))
-        # print(grid_image.size())
+        # grid_image = make_grid(decode_seg_map_sequence(torch.max(output[:3], 1)[1].detach().cpu().numpy()),
+        #                         3, normalize=False, range=(0, 255))
         # save_image(grid_image,args.in_path+"/"+"{}_mask.png".format(name[0:-4]))
+
         u_time = time.time()
         img_time = u_time-s_time
         print("image:{} time: {} ".format(name,img_time))

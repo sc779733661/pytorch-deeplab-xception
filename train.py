@@ -301,6 +301,3 @@ def main():
 
 if __name__ == "__main__":
    main()
-
-# python train.py --backbone mobilenet --lr 0.007 --workers 1 --epochs 50 
-#                 --batch-size 8 --gpu-ids 0 --checkname deeplab-mobilenet --dataset meter_seg_voc
